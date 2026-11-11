@@ -4,9 +4,9 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
 ![LangChain](https://img.shields.io/badge/LangChain-0.3-green)
-![HuggingFace](https://img.shields.io/badge/HuggingFace-Embeddings-yellow?logo=huggingface)
-![FAISS](https://img.shields.io/badge/FAISS-Vector%20DB-orange)
-![Groq](https://img.shields.io/badge/Groq-LPU%20Inference-red)
+![Google AI Studio](https://img.shields.io/badge/Google%20AI%20Studio-Gemini-yellow)
+![Chroma](https://img.shields.io/badge/Chroma-Vector%20DB-orange)
+![OpenAI SDK](https://img.shields.io/badge/OpenAI%20SDK-compatible-blue)
 ![Flask](https://img.shields.io/badge/Flask-Backend-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
@@ -26,7 +26,7 @@ Split into small chunks (500 characters each)
 Convert each chunk into a number vector (semantic embedding)
    │
    ▼
-Store all vectors in FAISS (a local vector database)
+Store all vectors in Chroma (a persistent local vector database)
    │
    ▼
 You ask a question
@@ -94,17 +94,17 @@ PyPDFLoader → extracts text per page
 RecursiveCharacterTextSplitter → 500 char chunks, 50 char overlap
    │
    ▼
-HuggingFace Embeddings (all-MiniLM-L6-v2, local, free)
+Google AI Studio Embeddings (gemini-embedding-001)
    │
    ▼
-FAISS Vector Store (local vector database)
+Chroma Vector Store (persistent local vector database)
    │
    ▼
 User asks a question
    │
-   ├── FAISS retrieves top 4 relevant chunks
+   ├── Chroma retrieves top 4 relevant chunks
    │
-   └── Groq API (llama-3.1-8b-instant) generates answer
+   └── Google AI Studio (Gemini) generates answer through the OpenAI SDK
             │
             ▼
        Answer + Source Pages shown in UI
@@ -118,9 +118,9 @@ User asks a question
 | ------------------- | ------------------------------ | ---------------------------------------------- |
 | PDF text extraction | PyPDFLoader                    | Reads embedded fonts cleanly, no OCR noise     |
 | Text splitting      | RecursiveCharacterTextSplitter | Preserves sentence context at chunk boundaries |
-| Embeddings          | `all-MiniLM-L6-v2`             | Free, 80MB, runs on CPU, high quality          |
-| Vector database     | FAISS (CPU)                    | Local, no cloud needed, fast similarity search |
-| LLM                 | Groq `llama-3.1-8b-instant`    | ~0.5s responses vs 30s+ for local CPU models   |
+| Embeddings          | Google `gemini-embedding-001`  | Managed semantic embeddings for retrieval      |
+| Vector database     | Chroma                         | Persistent local vector storage and retrieval  |
+| LLM                 | Google Gemini via OpenAI SDK   | Hosted answer generation                       |
 | Backend             | Flask                          | Lightweight Python web server                  |
 | Frontend            | Custom HTML/CSS/JS             | Animated dark UI, no framework needed          |
 
@@ -141,19 +141,38 @@ cd rag-pdf-chatbot
 pip install -r requirements.txt
 ```
 
-### 3. Get a free Groq API key
+### 3. Get a Google AI Studio API key
 
-1. Go to **https://console.groq.com**
-2. Sign up (free) → API Keys → Create API Key
+1. Go to **https://aistudio.google.com/apikey**
+2. Create a Gemini API key
 3. Copy your key
 
 ### 4. Create your `.env` file
 
 ```
-GROQ_API_KEY=your_key_here
+GOOGLE_API_KEY=your_google_ai_studio_key_here
+GOOGLE_LLM_MODEL=gemini-3.8-flash
+GOOGLE_EMBEDDING_MODEL=gemini-embedding-001
+CHROMA_DIR=./chroma_db
+CHROMA_COLLECTION_NAME=pdf_documents
+GOOGLE_API_TIMEOUT_SECONDS=30
+GOOGLE_API_MAX_RETRIES=0
 ```
 
 > ⚠️ Never commit this file to GitHub. It's already in `.gitignore`.
+
+The Chroma directory is persistent. In Docker, mount `/data/chroma` to a
+durable host or Azure managed-disk directory so the index survives container
+recreation.
+
+For local Windows development, you can place Chroma outside OneDrive:
+
+```env
+CHROMA_DIR=C:/rag-data/chroma
+```
+
+The application prints `[TIMING]` lines for query embedding, Chroma retrieval,
+Gemini generation, and total answer time.
 
 ### 5. Run
 
@@ -161,7 +180,21 @@ GROQ_API_KEY=your_key_here
 python app.py
 ```
 
-Open `http://127.0.0.1:5000` in your browser.
+Open `http://127.0.0.1:8081` in your browser, unless you set `PORT`.
+
+### Docker deployment
+
+Build and run the container with a persistent Chroma directory:
+
+```bash
+docker build -t rag-pdf-chatbot .
+docker run -p 8081:8081 --env-file .env \
+  -v /srv/rag-data/chroma:/data/chroma \
+  rag-pdf-chatbot
+```
+
+The container listens on `0.0.0.0:8081`. Allow TCP port `8081` in the
+Azure VM Network Security Group when hosting it on an Azure VM.
 
 ---
 
@@ -179,9 +212,8 @@ Open `http://127.0.0.1:5000` in your browser.
 ```
 rag-pdf-chatbot/
 ├── app.py              # Flask server — API endpoints + serves HTML
-├── rag_engine.py       # RAG pipeline — PDF loading, FAISS indexing, QA chain
+├── rag_engine.py       # RAG pipeline — PDF loading, Chroma indexing, QA chain
 ├── requirements.txt    # Python dependencies
-├── .env.example        # Template for your API key (copy to .env)
 ├── .gitignore          # Keeps .env and cache out of git
 ├── README.md           # This file
 └── static/
@@ -196,7 +228,8 @@ rag-pdf-chatbot/
 | -------------------------- | ------------------- | ------------------------------------------------------ |
 | Number of chunks retrieved | `rag_engine.py`     | Change `k=4` in `as_retriever()`                       |
 | Chunk size                 | `rag_engine.py`     | Adjust `chunk_size=500`                                |
-| LLM model                  | `rag_engine.py`     | Replace `llama-3.1-8b-instant` with another Groq model |
+| LLM model                  | `.env`              | Set `GOOGLE_LLM_MODEL` to an available Gemini model   |
+| Embedding model             | `.env`              | Set `GOOGLE_EMBEDDING_MODEL` to an available model    |
 | UI colors/theme            | `static/index.html` | Edit CSS variables at the top of the file              |
 
 ---
@@ -204,10 +237,10 @@ rag-pdf-chatbot/
 ## 🏷️ Skills Demonstrated
 
 - **RAG architecture** — end-to-end implementation from scratch
-- **Vector databases** — FAISS indexing and semantic similarity search
-- **LangChain 0.3** — LCEL chains, retrievers, prompt templates
-- **HuggingFace** — local embedding models
-- **Groq API** — production LLM inference integration
+- **Vector databases** — Chroma persistence and semantic similarity search
+- **LangChain 0.3** — PDF loaders, chunking, Chroma retrievers, and LCEL integration
+- **Google AI Studio** — Gemini embeddings and answer generation
+- **OpenAI SDK** — API client used with Google’s compatibility endpoint
 - **Flask** — REST API backend with file upload handling
 - **Frontend** — animated UI without any JS framework
 

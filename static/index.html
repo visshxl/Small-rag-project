@@ -816,13 +816,13 @@
         <div class="logo-ring"><span>🤖</span></div>
         <h1>RAG PDF Chatbot</h1>
         <p class="subtitle">
-          Retrieval-Augmented Generation · Semantic Search · Local LLM
+          Retrieval-Augmented Generation · Semantic Search · Google Gemini
         </p>
         <div class="badge-row">
           <span class="badge a">LangChain 0.3</span>
-          <span class="badge">FAISS</span>
-          <span class="badge b">HuggingFace</span>
-          <span class="badge">Flan-T5</span>
+          <span class="badge">Chroma</span>
+          <span class="badge b">OpenAI SDK</span>
+          <span class="badge">Gemini</span>
           <span class="badge c">Python</span>
         </div>
       </div>
@@ -1172,6 +1172,23 @@
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
         return (bytes / (1024 * 1024)).toFixed(1) + " MB";
       }
+
+      // Restore the chat lock state when a persisted Chroma index exists.
+      (async function restoreIndexedPdf() {
+        try {
+          const res = await fetch("/status");
+          const data = await res.json();
+          if (!data.indexed) return;
+
+          pdfIndexed = true;
+          lockedOverlay.classList.add("hidden");
+          questionInput.disabled = false;
+          sendBtn.disabled = false;
+          showStatus("success", "✓ Existing PDF index restored");
+        } catch (_) {
+          // The normal upload flow remains available if status checks fail.
+        }
+      })();
     </script>
   </body>
 </html>

@@ -1,0 +1,13 @@
+.env
+.env.*
+.git
+.gitignore
+__pycache__/
+*.py[cod]
+chroma_db/
+chroma_data/
+*.pdf
+*.log
+.venv/
+venv/
+env/

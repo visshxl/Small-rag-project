@@ -25,10 +25,10 @@ models/
 *.pt
 *.pth
 
-# FAISS index files — regenerated each run from the PDF
-*.faiss
-*.index
-faiss_index/
+# Chroma database files — local persistent vector store
+chroma_db/
+chroma_data/
+*.sqlite3
 
 # Uploaded PDF files — user data, not part of the project
 *.pdf
