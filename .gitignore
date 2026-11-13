@@ -54,3 +54,6 @@ flagged/
 # Logs
 *.log
 logs/
+
+.corepack-cache
+.ua

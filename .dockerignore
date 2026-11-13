@@ -11,3 +11,5 @@ chroma_data/
 .venv/
 venv/
 env/
+.corepack-cache
+.ua
