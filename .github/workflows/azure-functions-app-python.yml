@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: basic-rag-application
+  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
   CONTAINER_NAME: rag-app
   CHROMA_VOLUME: rag-chroma
 
