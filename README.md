@@ -1,17 +1,5 @@
 # 🤖 RAG PDF Chatbot
 
-> Ask questions over **any PDF document** using Retrieval-Augmented Generation (RAG)
-
-![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
-![LangChain](https://img.shields.io/badge/LangChain-0.3-green)
-![Google AI Studio](https://img.shields.io/badge/Google%20AI%20Studio-Gemini-yellow)
-![Chroma](https://img.shields.io/badge/Chroma-Vector%20DB-orange)
-![OpenAI SDK](https://img.shields.io/badge/OpenAI%20SDK-compatible-blue)
-![Flask](https://img.shields.io/badge/Flask-Backend-lightgrey)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
-
----
-
 ## 🧠 What is RAG? (Simple Explanation)
 
 Imagine you have a 100-page PDF. You can't paste the whole thing into ChatGPT. RAG solves this:
